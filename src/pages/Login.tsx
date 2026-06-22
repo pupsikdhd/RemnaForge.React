@@ -54,6 +54,11 @@ export default function Login() {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    // Состояния для TOTP
+    const [showTotpVerification, setShowTotpVerification] = useState(false);
+    const [totpToken, setTotpToken] = useState<string | null>(null);
+    const [totpCode, setTotpCode] = useState('');
+
     // Проверяем URL на наличие кода приглашения (например, ?invite=UUID)
     useEffect(() => {
         const inviteParam = searchParams.get('invite') || searchParams.get('inviteId') || searchParams.get('code');
@@ -71,6 +76,40 @@ export default function Login() {
     const handleInviteChange = (val: string) => {
         const uuid = extractUuid(val);
         setInviteId(uuid || val);
+    };
+
+    const handleTotpSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        if (!totpToken || totpCode.length !== 6) return;
+
+        setIsLoading(true);
+        try {
+            const response = await api.post('/api/auth/verify-totp', {
+                totpToken: totpToken,
+                code: totpCode
+            });
+
+            if (response.status === 200) {
+                console.log("Успешная двухфакторная авторизация!");
+                login();
+                navigate('/admin', { replace: true });
+            }
+        } catch (err: any) {
+            console.error('Error verifying TOTP:', err);
+            let serverError = '';
+            if (err.response && err.response.data) {
+                if (typeof err.response.data === 'string') {
+                    serverError = err.response.data;
+                } else if (err.response.data.message) {
+                    serverError = err.response.data.message;
+                } else if (err.response.data.error) {
+                    serverError = err.response.data.error;
+                }
+            }
+            setError(serverError || t('login.invalidTotpCode') || 'Неверный код подтверждения');
+            setIsLoading(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -106,6 +145,13 @@ export default function Login() {
                 });
 
                 if (response.status === 200) {
+                    const data = response.data;
+                    if (data && (data.totpToken || data.requireTotp)) {
+                        setTotpToken(data.totpToken || '');
+                        setShowTotpVerification(true);
+                        setIsLoading(false);
+                        return;
+                    }
                     console.log("Успешная авторизация!");
                     login();
                     navigate('/admin', { replace: true });
@@ -129,6 +175,13 @@ export default function Login() {
                                 password: password
                             });
                             if (loginResponse.status === 200) {
+                                const data = loginResponse.data;
+                                if (data && (data.totpToken || data.requireTotp)) {
+                                    setTotpToken(data.totpToken || '');
+                                    setShowTotpVerification(true);
+                                    setIsLoading(false);
+                                    return;
+                                }
                                 login();
                                 navigate('/admin', { replace: true });
                             }
@@ -215,224 +268,295 @@ export default function Login() {
                 transition={{ duration: 0.4, delay: 0.1 }}
                 className="w-full max-w-md bg-white/80 border border-slate-200 rounded-3xl p-8 backdrop-blur-md shadow-xl dark:bg-slate-900/40 dark:border-slate-900 dark:shadow-2xl z-10 transition-colors duration-300"
             >
-                {/* Вкладки Вход / Регистрация */}
-                <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800/80 mb-6 relative transition-colors duration-300">
-                    <button
-                        type="button"
-                        disabled={isLoading}
-                        onClick={() => {
-                            setActiveTab('login');
-                            setError(null);
-                            setSuccessMessage(null);
-                        }}
-                        className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 relative cursor-pointer ${
-                            activeTab === 'login' ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                        } disabled:opacity-50`}
-                    >
-                        {activeTab === 'login' && (
-                            <motion.div
-                                layoutId="active-tab"
-                                className="absolute inset-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm"
-                                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            />
-                        )}
-                        <span className="relative z-10 flex items-center gap-2">
-                            <LogIn className="w-4 h-4" />
-                            {t('login.tabLogin')}
-                        </span>
-                    </button>
-                    <button
-                        type="button"
-                        disabled={isLoading}
-                        onClick={() => {
-                            setActiveTab('register');
-                            setError(null);
-                            setSuccessMessage(null);
-                        }}
-                        className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 relative cursor-pointer ${
-                            activeTab === 'register' ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                        } disabled:opacity-50`}
-                    >
-                        {activeTab === 'register' && (
-                            <motion.div
-                                layoutId="active-tab"
-                                className="absolute inset-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm"
-                                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            />
-                        )}
-                        <span className="relative z-10 flex items-center gap-2">
-                            <UserPlus className="w-4 h-4" />
-                            {t('login.tabRegister')}
-                        </span>
-                    </button>
-                </div>
-
-                <div className="mb-6">
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                        {activeTab === 'login' ? t('login.authHeader') : t('login.regHeader')}
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        {activeTab === 'login' 
-                            ? t('login.authDesc') 
-                            : t('login.regDesc')}
-                    </p>
-                </div>
-
-                {/* Вывод ошибок */}
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="mb-4 p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-sm flex items-start gap-3"
-                    >
-                        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                        <span>{error}</span>
-                    </motion.div>
-                )}
-
-                {/* Вывод сообщений об успехе */}
-                {successMessage && (
-                    <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="mb-4 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-sm flex items-start gap-3"
-                    >
-                        <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
-                        <span>{successMessage}</span>
-                    </motion.div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Поле Username */}
+                {showTotpVerification ? (
                     <div>
-                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                            {t('login.username')}
-                        </label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                                <User className="w-5 h-5" />
-                            </div>
-                            <input
-                                type="text"
-                                required
-                                disabled={isLoading}
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="admin"
-                                className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
-                            />
+                        <div className="mb-6">
+                            <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <ShieldCheck className="w-6 h-6 text-emerald-500" />
+                                {t('login.totpHeader') || '2FA Verification'}
+                            </h1>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                                {t('login.totpDesc') || 'Введите одноразовый код из вашего приложения Authenticator.'}
+                            </p>
                         </div>
-                    </div>
 
-                    {/* Поле Password */}
-                    <div>
-                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                            {t('login.password')}
-                        </label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                                <Lock className="w-5 h-5" />
+                        {/* Вывод ошибок */}
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="mb-4 p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-sm flex items-start gap-3"
+                            >
+                                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                <span>{error}</span>
+                            </motion.div>
+                        )}
+
+                        <form onSubmit={handleTotpSubmit} className="space-y-5">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                    {t('login.totpCode') || 'Код подтверждения'}
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    maxLength={6}
+                                    pattern="\d{6}"
+                                    disabled={isLoading}
+                                    value={totpCode}
+                                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                                    placeholder="123456"
+                                    className="w-full py-3 px-4 text-center text-2xl tracking-widest bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50 font-mono"
+                                />
                             </div>
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                required
-                                disabled={isLoading}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full pl-10 pr-12 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
-                            />
+
+                            <button
+                                type="submit"
+                                disabled={isLoading || totpCode.length !== 6}
+                                className="w-full py-3 px-4 bg-emerald-400 text-slate-950 font-semibold rounded-xl hover:bg-emerald-300 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-emerald-400/10 flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    t('login.btnSubmitTotp') || 'Подтвердить'
+                                )}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowTotpVerification(false);
+                                    setTotpCode('');
+                                    setError(null);
+                                }}
+                                className="w-full text-center text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors py-1 cursor-pointer"
+                            >
+                                {t('common.goBack') || 'Вернуться назад'}
+                            </button>
+                        </form>
+                    </div>
+                ) : (
+                    <>
+                        {/* Вкладки Вход / Регистрация */}
+                        <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800/80 mb-6 relative transition-colors duration-300">
                             <button
                                 type="button"
                                 disabled={isLoading}
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                                onClick={() => {
+                                    setActiveTab('login');
+                                    setError(null);
+                                    setSuccessMessage(null);
+                                }}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 relative cursor-pointer ${
+                                    activeTab === 'login' ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                } disabled:opacity-50`}
                             >
-                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                {activeTab === 'login' && (
+                                    <motion.div
+                                        layoutId="active-tab"
+                                        className="absolute inset-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm"
+                                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                    />
+                                )}
+                                <span className="relative z-10 flex items-center gap-2">
+                                    <LogIn className="w-4 h-4" />
+                                    {t('login.tabLogin')}
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isLoading}
+                                onClick={() => {
+                                    setActiveTab('register');
+                                    setError(null);
+                                    setSuccessMessage(null);
+                                }}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 relative cursor-pointer ${
+                                    activeTab === 'register' ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                } disabled:opacity-50`}
+                            >
+                                {activeTab === 'register' && (
+                                    <motion.div
+                                        layoutId="active-tab"
+                                        className="absolute inset-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm"
+                                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                    />
+                                )}
+                                <span className="relative z-10 flex items-center gap-2">
+                                    <UserPlus className="w-4 h-4" />
+                                    {t('login.tabRegister')}
+                                </span>
                             </button>
                         </div>
-                    </div>
 
-                    {/* Дополнительные поля для регистрации */}
-                    <AnimatePresence initial={false}>
-                        {activeTab === 'register' && (
+                        <div className="mb-6">
+                            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+                                {activeTab === 'login' ? t('login.authHeader') : t('login.regHeader')}
+                            </h1>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                {activeTab === 'login' 
+                                    ? t('login.authDesc') 
+                                    : t('login.regDesc')}
+                            </p>
+                        </div>
+
+                        {/* Вывод ошибок */}
+                        {error && (
                             <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="overflow-hidden space-y-5"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="mb-4 p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-sm flex items-start gap-3"
                             >
-                                {/* Поле Подтверждения Пароля */}
-                                <div>
-                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                                        {t('login.confirmPassword')}
-                                    </label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                                            <Lock className="w-5 h-5" />
-                                        </div>
-                                        <input
-                                            type={showConfirmPassword ? 'text' : 'password'}
-                                            required={activeTab === 'register'}
-                                            disabled={isLoading}
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            placeholder="••••••••"
-                                            className="w-full pl-10 pr-12 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
-                                        />
-                                        <button
-                                            type="button"
-                                            disabled={isLoading}
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                                        >
-                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Поле Invite ID */}
-                                <div>
-                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                                        {t('login.inviteCode')}
-                                    </label>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-500 mb-2 leading-tight">
-                                        {t('login.inviteCodeDesc')}
-                                    </p>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                                            <Tag className="w-5 h-5" />
-                                        </div>
-                                        <input
-                                            type="text"
-                                            disabled={isLoading}
-                                            value={inviteId}
-                                            onChange={(e) => handleInviteChange(e.target.value)}
-                                            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                                            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50 text-sm"
-                                        />
-                                    </div>
-                                </div>
+                                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                <span>{error}</span>
                             </motion.div>
                         )}
-                    </AnimatePresence>
 
-                    {/* Кнопка отправки */}
-                    <button
-                        type="submit"
-                        disabled={isLoading || !username || !password || (activeTab === 'register' && !confirmPassword)}
-                        className="w-full py-3 px-4 mt-2 bg-emerald-400 text-slate-950 font-semibold rounded-xl hover:bg-emerald-300 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-emerald-400/10 flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                        {isLoading ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : activeTab === 'login' ? (
-                            t('login.btnSubmitLogin')
-                        ) : (
-                            t('login.btnSubmitRegister')
+                        {/* Вывод сообщений об успехе */}
+                        {successMessage && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="mb-4 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-sm flex items-start gap-3"
+                            >
+                                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                                <span>{successMessage}</span>
+                            </motion.div>
                         )}
-                    </button>
-                </form>
+
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            {/* Поле Username */}
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                    {t('login.username')}
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                        <User className="w-5 h-5" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        required
+                                        disabled={isLoading}
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        placeholder="admin"
+                                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Поле Password */}
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                    {t('login.password')}
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                        <Lock className="w-5 h-5" />
+                                    </div>
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        required
+                                        disabled={isLoading}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        className="w-full pl-10 pr-12 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
+                                    />
+                                    <button
+                                        type="button"
+                                        disabled={isLoading}
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                                    >
+                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Дополнительные поля для регистрации */}
+                            <AnimatePresence initial={false}>
+                                {activeTab === 'register' && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="overflow-hidden space-y-5"
+                                    >
+                                        {/* Поле Подтверждения Пароля */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                                {t('login.confirmPassword')}
+                                            </label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                                    <Lock className="w-5 h-5" />
+                                                </div>
+                                                <input
+                                                    type={showConfirmPassword ? 'text' : 'password'}
+                                                    required={activeTab === 'register'}
+                                                    disabled={isLoading}
+                                                    value={confirmPassword}
+                                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                                    placeholder="••••••••"
+                                                    className="w-full pl-10 pr-12 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    disabled={isLoading}
+                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                                                >
+                                                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Поле Invite ID */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                                {t('login.inviteCode')}
+                                            </label>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-500 mb-2 leading-tight">
+                                                {t('login.inviteCodeDesc')}
+                                            </p>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                                    <Tag className="w-5 h-5" />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    disabled={isLoading}
+                                                    value={inviteId}
+                                                    onChange={(e) => handleInviteChange(e.target.value)}
+                                                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                                    className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50 text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Кнопка отправки */}
+                            <button
+                                type="submit"
+                                disabled={isLoading || !username || !password || (activeTab === 'register' && !confirmPassword)}
+                                className="w-full py-3 px-4 mt-2 bg-emerald-400 text-slate-950 font-semibold rounded-xl hover:bg-emerald-300 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-emerald-400/10 flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : activeTab === 'login' ? (
+                                    t('login.btnSubmitLogin')
+                                ) : (
+                                    t('login.btnSubmitRegister')
+                                )}
+                            </button>
+                        </form>
+                    </>
+                )}
             </motion.div>
         </div>
     );

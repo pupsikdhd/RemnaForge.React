@@ -24,6 +24,8 @@ import { DevicesModal } from '../components/admin/DevicesModal';
 import { QrModal } from '../components/admin/QrModal';
 import { SubModal } from '../components/admin/SubModal';
 import { InviteModal } from '../components/admin/InviteModal';
+import { ApiKeysTab } from '../components/admin/ApiKeysTab';
+import { TotpTab } from '../components/admin/TotpTab';
 
 export default function AdminDashboard() {
     const { t } = useTranslation();
@@ -404,6 +406,19 @@ export default function AdminDashboard() {
                                             getInviteRegisterLink={getInviteRegisterLink}
                                             formatDate={formatDate}
                                             isExpired={isExpired}
+                                        />
+                                    )}
+
+                                    {activeTab === 'apikeys' && (
+                                        <ApiKeysTab
+                                            onShowStatus={showStatus}
+                                            formatDate={formatDate}
+                                        />
+                                    )}
+
+                                    {activeTab === 'totp' && (
+                                        <TotpTab
+                                            onShowStatus={showStatus}
                                         />
                                     )}
 

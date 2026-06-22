@@ -40,6 +40,7 @@ export interface Subscription {
     x_VER_OS: string | null;
     useR_AGENT: string | null;
     x_APP_VERSION: string | null;
+    x_Device_Model: string | null;
     accepT_ENCODING: string | null;
 }
 
@@ -51,6 +52,7 @@ export interface CreateSubscriptionRequest {
     x_VER_OS?: string | null;
     useR_AGENT?: string | null;
     x_APP_VERSION?: string | null;
+    x_Device_Model?: string | null;
     accepT_ENCODING?: string | null;
 }
 
@@ -63,6 +65,7 @@ export interface PatchSubscriptionRequest {
     x_VER_OS?: string | null;
     useR_AGENT?: string | null;
     x_APP_VERSION?: string | null;
+    x_Device_Model?: string | null;
     accepT_ENCODING?: string | null;
 }
 
@@ -101,6 +104,45 @@ export interface Device {
     lastActiveAt?: string;
     createdAt?: string;
     userAgent?: string;
+}
+
+export interface CreateApiKeyRequest {
+    key: string;
+    description?: string | null;
+}
+
+export interface UpdateApiKeyRequest {
+    key?: string | null;
+    description?: string | null;
+}
+
+export interface ApiKey {
+    id: string;
+    key: string;
+    description: string | null;
+    createdAt: string;
+}
+
+export interface TOTPVerifyRequest {
+    totpToken: string;
+    code: string;
+}
+
+export interface TOTPEnableRequest {
+    code: string;
+}
+
+export interface TOTPDisableRequest {
+    code: string;
+}
+
+export interface TotpStatus {
+    enabled: boolean;
+}
+
+export interface TotpSetupResponse {
+    secret: string;
+    qrCodeUrl: string;
 }
 
 // API Functions
@@ -173,5 +215,40 @@ export const apiService = {
     },
     deletePublicDevice: async (slug: string, deviceId: string): Promise<void> => {
         await api.delete(`/api/public/clients/${slug}/devices/${deviceId}`);
+    },
+
+    // Api Keys
+    getApiKeys: async (): Promise<ApiKey[]> => {
+        const res = await api.get<ApiKey[]>('/api/apikeys');
+        return res.data;
+    },
+    createApiKey: async (data: CreateApiKeyRequest): Promise<void> => {
+        await api.post('/api/apikeys', data);
+    },
+    updateApiKey: async (id: string, data: UpdateApiKeyRequest): Promise<void> => {
+        await api.put(`/api/apikeys/${id}`, data);
+    },
+    deleteApiKey: async (id: string): Promise<void> => {
+        await api.delete(`/api/apikeys/${id}`);
+    },
+
+    // TOTP
+    getTotpStatus: async (): Promise<TotpStatus> => {
+        const res = await api.get<TotpStatus>('/api/totp');
+        return res.data;
+    },
+    generateTotp: async (): Promise<TotpSetupResponse> => {
+        const res = await api.get<TotpSetupResponse>('/api/totp/generate');
+        return res.data;
+    },
+    enableTotp: async (code: string): Promise<void> => {
+        await api.post('/api/totp/enable', { code });
+    },
+    disableTotp: async (code: string): Promise<void> => {
+        await api.post('/api/totp/disable', { code });
+    },
+    verifyTotp: async (data: TOTPVerifyRequest): Promise<any> => {
+        const res = await api.post('/api/auth/verify-totp', data);
+        return res.data;
     }
 };

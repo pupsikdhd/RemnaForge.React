@@ -16,6 +16,7 @@ interface SubModalProps {
         x_VER_OS: string | null;
         useR_AGENT: string | null;
         x_APP_VERSION: string | null;
+        x_Device_Model: string | null;
         accepT_ENCODING: string | null;
     }) => Promise<void>;
     actionLoading: boolean;
@@ -38,6 +39,7 @@ export const SubModal: React.FC<SubModalProps> = ({
         x_VER_OS: '',
         useR_AGENT: '',
         x_APP_VERSION: '',
+        x_Device_Model: '',
         accepT_ENCODING: '',
     });
     const [showAdvancedHeaders, setShowAdvancedHeaders] = useState(false);
@@ -53,6 +55,7 @@ export const SubModal: React.FC<SubModalProps> = ({
                     x_VER_OS: editingSub.x_VER_OS || '',
                     useR_AGENT: editingSub.useR_AGENT || '',
                     x_APP_VERSION: editingSub.x_APP_VERSION || '',
+                    x_Device_Model: editingSub.x_Device_Model || '',
                     accepT_ENCODING: editingSub.accepT_ENCODING || '',
                 });
                 setShowAdvancedHeaders(
@@ -62,6 +65,7 @@ export const SubModal: React.FC<SubModalProps> = ({
                         editingSub.x_VER_OS ||
                         editingSub.useR_AGENT ||
                         editingSub.x_APP_VERSION ||
+                        editingSub.x_Device_Model ||
                         editingSub.accepT_ENCODING
                     )
                 );
@@ -74,6 +78,7 @@ export const SubModal: React.FC<SubModalProps> = ({
                     x_VER_OS: '',
                     useR_AGENT: '',
                     x_APP_VERSION: '',
+                    x_Device_Model: '',
                     accepT_ENCODING: '',
                 });
                 setShowAdvancedHeaders(false);
@@ -93,6 +98,7 @@ export const SubModal: React.FC<SubModalProps> = ({
             x_VER_OS: form.x_VER_OS || null,
             useR_AGENT: form.useR_AGENT || null,
             x_APP_VERSION: form.x_APP_VERSION || null,
+            x_Device_Model: form.x_Device_Model || null,
             accepT_ENCODING: form.accepT_ENCODING || null,
         });
     };
@@ -108,8 +114,8 @@ export const SubModal: React.FC<SubModalProps> = ({
                 <div className="p-6 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                         {editingSub
-                            ? t('admin.subscriptions.modal.editTitle')
-                            : t('admin.subscriptions.modal.addTitle')}
+                             ? t('admin.subscriptions.modal.editTitle')
+                             : t('admin.subscriptions.modal.addTitle')}
                     </h3>
                     <button
                         onClick={onClose}
@@ -241,6 +247,25 @@ export const SubModal: React.FC<SubModalProps> = ({
                                                 }))
                                             }
                                             placeholder="e.g. v2rayNG/1.8.5"
+                                            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 outline-none text-slate-850 dark:text-slate-200"
+                                        />
+                                    </div>
+
+                                    {/* Device Model */}
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xs font-semibold text-slate-500">
+                                            {t('admin.subscriptions.modal.deviceModelLabel') || 'X-Device-Model'}
+                                        </span>
+                                        <input
+                                            type="text"
+                                            value={form.x_Device_Model}
+                                            onChange={(e) =>
+                                                setForm((prev) => ({
+                                                    ...prev,
+                                                    x_Device_Model: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="e.g. Pixel 7 Pro"
                                             className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 outline-none text-slate-850 dark:text-slate-200"
                                         />
                                     </div>

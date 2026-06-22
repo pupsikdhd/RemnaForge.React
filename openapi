@@ -5,6 +5,92 @@
     "version": "1.0"
   },
   "paths": {
+    "/api/apikeys": {
+      "get": {
+        "tags": [
+          "ApiKeyEndpoints"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ApiKeyEndpoints"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/apikeys/{id}": {
+      "put": {
+        "tags": [
+          "ApiKeyEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateApiKeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ApiKeyEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "tags": [
@@ -15,6 +101,28 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AuthorizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/verify-totp": {
+      "post": {
+        "tags": [
+          "AuthEndpoints"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TOTPVerifyRequest"
               }
             }
           },
@@ -427,6 +535,74 @@
           }
         }
       }
+    },
+    "/api/totp": {
+      "get": {
+        "tags": [
+          "TOTPEndpoints"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/totp/generate": {
+      "get": {
+        "tags": [
+          "TOTPEndpoints"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/totp/enable": {
+      "post": {
+        "tags": [
+          "TOTPEndpoints"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TOTPEnableRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/totp/disable": {
+      "post": {
+        "tags": [
+          "TOTPEndpoints"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TOTPDisableRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -443,6 +619,23 @@
             "nullable": true
           },
           "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateApiKeyRequest": {
+        "required": [
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
             "type": "string",
             "nullable": true
           }
@@ -516,6 +709,10 @@
             "nullable": true
           },
           "x_APP_VERSION": {
+            "type": "string",
+            "nullable": true
+          },
+          "x_Device_Model": {
             "type": "string",
             "nullable": true
           },
@@ -611,6 +808,10 @@
             "type": "string",
             "nullable": true
           },
+          "x_Device_Model": {
+            "type": "string",
+            "nullable": true
+          },
           "accepT_ENCODING": {
             "type": "string",
             "nullable": true
@@ -636,10 +837,71 @@
           }
         },
         "additionalProperties": false
+      },
+      "TOTPDisableRequest": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TOTPEnableRequest": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TOTPVerifyRequest": {
+        "required": [
+          "code",
+          "totpToken"
+        ],
+        "type": "object",
+        "properties": {
+          "totpToken": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "code": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateApiKeyRequest": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
       }
     }
   },
   "tags": [
+    {
+      "name": "ApiKeyEndpoints"
+    },
     {
       "name": "AuthEndpoints"
     },
@@ -657,6 +919,9 @@
     },
     {
       "name": "SystemSettingsEndpoints"
+    },
+    {
+      "name": "TOTPEndpoints"
     }
   ]
 }

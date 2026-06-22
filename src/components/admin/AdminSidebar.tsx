@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Users, Layers, Key, Settings } from 'lucide-react';
+import { Users, Layers, Key, Settings, KeyRound, ShieldCheck } from 'lucide-react';
 
-export type TabType = 'clients' | 'subscriptions' | 'invites' | 'settings';
+export type TabType = 'clients' | 'subscriptions' | 'invites' | 'apikeys' | 'totp' | 'settings';
 
 interface AdminSidebarProps {
     activeTab: TabType;
@@ -16,6 +16,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActive
         { id: 'clients', icon: <Users className="w-4.5 h-4.5 shrink-0" />, label: t('admin.tabs.clients') },
         { id: 'subscriptions', icon: <Layers className="w-4.5 h-4.5 shrink-0" />, label: t('admin.tabs.subscriptions') },
         { id: 'invites', icon: <Key className="w-4.5 h-4.5 shrink-0" />, label: t('admin.tabs.invites') },
+        { id: 'apikeys', icon: <KeyRound className="w-4.5 h-4.5 shrink-0" />, label: t('admin.tabs.apikeys') || 'API Tokens' },
+        { id: 'totp', icon: <ShieldCheck className="w-4.5 h-4.5 shrink-0" />, label: t('admin.tabs.totp') || '2FA Security' },
         { id: 'settings', icon: <Settings className="w-4.5 h-4.5 shrink-0" />, label: t('admin.tabs.settings') },
     ];
 

@@ -54,7 +54,12 @@ const resources = {
                 inviteCode: "Код приглашения (Опционально)",
                 inviteCodeDesc: "Если регистрация ограничена настройками бэкенда, вам понадобится UUID код приглашения",
                 btnSubmitLogin: "Войти в систему",
-                btnSubmitRegister: "Создать аккаунт"
+                btnSubmitRegister: "Создать аккаунт",
+                totpHeader: "Двухфакторная авторизация",
+                totpDesc: "Введите одноразовый код из вашего приложения Authenticator.",
+                totpCode: "Код подтверждения",
+                btnSubmitTotp: "Подтвердить код",
+                invalidTotpCode: "Неверный код TOTP. Пожалуйста, попробуйте еще раз."
             },
             notFound: {
                 title: "Страница не найдена",
@@ -66,6 +71,8 @@ const resources = {
                     clients: "Клиенты",
                     subscriptions: "Подписки",
                     invites: "Инвайты",
+                    apikeys: "API Ключи",
+                    totp: "2FA Безопасность",
                     settings: "Настройки"
                 },
                 clients: {
@@ -127,6 +134,7 @@ const resources = {
                         deviceOsLabel: "X-Device-OS",
                         verOsLabel: "X-Ver-OS",
                         userAgentLabel: "User-Agent",
+                        deviceModelLabel: "X-Device-Model / Модель устройства",
                         appVerLabel: "X-App-Version",
                         acceptEncLabel: "Accept-Encoding",
                         headersSection: "Кастомизация заголовков запроса к апстриму",
@@ -162,6 +170,12 @@ const resources = {
                     cacheDuration: "Длительность кэша (в минутах)",
                     saveBtn: "Сохранить настройки",
                     success: "Настройки успешно сохранены!"
+                },
+                apikeys: {
+                    title: "API Токены"
+                },
+                totp: {
+                    title: "Двухфакторная защита (2FA)"
                 }
             },
             client: {
@@ -252,7 +266,12 @@ const resources = {
                 inviteCode: "Invite Code (Optional)",
                 inviteCodeDesc: "If registration is restricted by backend settings, you will need a UUID invite code",
                 btnSubmitLogin: "Log In",
-                btnSubmitRegister: "Create Account"
+                btnSubmitRegister: "Create Account",
+                totpHeader: "2FA Verification",
+                totpDesc: "Enter the one-time code from your Authenticator app.",
+                totpCode: "Verification Code",
+                btnSubmitTotp: "Verify & Login",
+                invalidTotpCode: "Invalid TOTP verification code"
             },
             notFound: {
                 title: "Page Not Found",
@@ -264,6 +283,8 @@ const resources = {
                     clients: "Clients",
                     subscriptions: "Subscriptions",
                     invites: "Invites",
+                    apikeys: "API Tokens",
+                    totp: "2FA Security",
                     settings: "Settings"
                 },
                 clients: {
@@ -325,6 +346,7 @@ const resources = {
                         deviceOsLabel: "X-Device-OS",
                         verOsLabel: "X-Ver-OS",
                         userAgentLabel: "User-Agent",
+                        deviceModelLabel: "X-Device-Model",
                         appVerLabel: "X-App-Version",
                         acceptEncLabel: "Accept-Encoding",
                         headersSection: "Upstream Custom Request Headers",
@@ -360,6 +382,12 @@ const resources = {
                     cacheDuration: "Cache Duration (minutes)",
                     saveBtn: "Save Settings",
                     success: "Settings saved successfully!"
+                },
+                apikeys: {
+                    title: "API Tokens"
+                },
+                totp: {
+                    title: "Two-Factor Authentication (2FA)"
                 }
             },
             client: {
